@@ -17,7 +17,8 @@
 esp_err_t WifiWrapper::sta_connect(
     const char* ssid, 
     const char* pass,
-    int max_reconnect_count
+    int max_reconnect_count, 
+    bool is_async
 ) {
     if(ENABLED == get_ap_status()) {
         ESP_LOGE(TAG, "Can not connect STA: AP running");
@@ -77,6 +78,10 @@ esp_err_t WifiWrapper::sta_connect(
 
     _sta_st = ENABLED;
 
+    if(is_async) {
+        return ESP_OK;
+    }
+
     EventBits_t bits =  xEventGroupWaitBits(
         sta_event_group, 
         STA_CONNECTED_BIT | STA_CONN_LIMIT_REACHED_BIT,
@@ -87,9 +92,6 @@ esp_err_t WifiWrapper::sta_connect(
     if(bits & STA_CONNECTED_BIT) {
         return ESP_OK;
     } else {
-        ESP_LOGE(
-            TAG, "STA: Reconnect limit (%d) reached", max_reconnect_count
-        );
         return ESP_FAIL;
     }
 
@@ -240,6 +242,9 @@ extern "C" void WifiWrapper::wifi_event_handler(
             (w->sta_reconnect_count >= w->sta_max_reconnect_count) && 
             (w->sta_max_reconnect_count != -1)
         ) {
+            ESP_LOGE(
+                TAG, "STA: Reconnect limit (%d) reached", w->sta_max_reconnect_count
+            );
             xEventGroupSetBits(
                 w->sta_event_group, STA_CONN_LIMIT_REACHED_BIT
             );

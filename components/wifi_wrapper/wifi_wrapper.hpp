@@ -16,7 +16,8 @@ public:
     };
 
     esp_err_t sta_connect(const char* ssid, const char* pass, 
-                          int max_reconnect_count = -1);
+                          int max_reconnect_count = -1,
+                          bool is_async = false);
     esp_err_t sta_disconnect();
     status_t get_sta_status();
     bool is_sta_connected();
