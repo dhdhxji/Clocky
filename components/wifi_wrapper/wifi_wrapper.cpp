@@ -10,13 +10,23 @@
 
 
 esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
-    //TODO 
+    if(ENABLED == get_ap_status()) {
+        ESP_LOGE(TAG, "Can not connect STA: AP running");
+        return ESP_FAIL;
+    }
+
+    if(CONNECTED == get_sta_status()) {
+        ESP_LOGE(TAG, "Can not connect STA: already connected");
+        return ESP_FAIL;
+    }
+
+    //TODO
     return ESP_OK;
 }
 
 esp_err_t WifiWrapper::sta_disconnect() {
     if(DISCONNECTED == get_sta_status()) {
-        ESP_LOGE(TAG, "Can not disconnect, sta is not connected\n");
+        ESP_LOGE(TAG, "Can not disconnect, sta is not connected");
         return ESP_FAIL;
     }
 
@@ -29,9 +39,19 @@ WifiWrapper::sta_status WifiWrapper::get_sta_status() {
 }
 
 esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
+    if(ENABLED == get_ap_status()) {
+        ESP_LOGE(TAG, "Can not start AP: already running");
+        return ESP_FAIL;
+    }
+
+    if(CONNECTED == get_sta_status()) {
+        ESP_LOGE(TAG, "Can not start AP: STA running");
+        return ESP_FAIL;
+    }
+
     netif = esp_netif_create_default_wifi_ap();
     if(netif == nullptr) {
-        ESP_LOGE(TAG, "Can not create AP, netif not initiated\n");
+        ESP_LOGE(TAG, "Can not create AP, netif not initiated");
         return ESP_FAIL;
     }
 
@@ -46,7 +66,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
     esp_err_t st;
     st = esp_wifi_set_mode(WIFI_MODE_AP);
     if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Can not set wifi mode\n");
+        ESP_LOGE(TAG, "Can not set wifi mode");
         esp_wifi_set_mode(WIFI_MODE_NULL);
         esp_netif_destroy(netif);
         return st;
@@ -54,7 +74,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
 
     st = esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
     if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Can not configure wifi\n");
+        ESP_LOGE(TAG, "Can not configure wifi");
         esp_wifi_set_mode(WIFI_MODE_NULL);
         esp_netif_destroy(netif);
         return st;
@@ -62,7 +82,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
 
     st = esp_wifi_start();
     if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Can not start AP\n");
+        ESP_LOGE(TAG, "Can not start AP");
         esp_wifi_set_mode(WIFI_MODE_NULL);
         esp_netif_destroy(netif);
         return st;
@@ -77,7 +97,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
 
 esp_err_t WifiWrapper::ap_stop() {
     if(DISABLED == get_ap_status()) {
-        ESP_LOGE(TAG, "Can not stop AP, it is already stopped\n");
+        ESP_LOGE(TAG, "Can not stop AP, it is already stopped");
         return ESP_FAIL;
     }
 
