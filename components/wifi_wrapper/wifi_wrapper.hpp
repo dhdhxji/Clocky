@@ -5,6 +5,8 @@
 #include "esp_netif.h"
 #include "esp_event.h"
 #include "freertos/event_groups.h"
+#include <vector>
+#include <functional>
 
 class WifiWrapper {
 public:
@@ -24,6 +26,9 @@ public:
     esp_err_t ap_stop();
     status_t get_ap_status();
 
+    void add_sta_connection_handler(std::function<void(WifiWrapper*, bool)> cb);
+    void add_sta_disconnect_handler(std::function<void(WifiWrapper*)> cb);
+    
     static WifiWrapper* getInstanse();
 
 protected:
@@ -36,6 +41,9 @@ protected:
             void* arg, esp_event_base_t event_base,
             int32_t event_id, void* event_data
     );
+
+    void notify_sta_connect(bool is_connected);
+    void notify_sta_disconnect();
 
 private: 
     WifiWrapper();
@@ -50,6 +58,10 @@ protected:
     int sta_max_reconnect_count = 0;
     int sta_reconnect_count = 0;
     EventGroupHandle_t sta_event_group;
+
+    std::vector<std::function<void(WifiWrapper*)>> sta_disconnect_handlers;
+    std::vector<std::function<void(WifiWrapper*, bool)>> sta_conn_handlers; 
+
 };
 
 #endif // WIFI_WRAPPER_H

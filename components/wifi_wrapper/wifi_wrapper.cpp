@@ -96,7 +96,7 @@ esp_err_t WifiWrapper::sta_connect(
 }
 
 esp_err_t WifiWrapper::sta_disconnect() {
-    if(ENABLED == get_sta_status()) {
+    if(DISABLED == get_sta_status()) {
         ESP_LOGE(TAG, "Can not disconnect, sta is not connected");
         return ESP_FAIL;
     }
@@ -197,6 +197,18 @@ WifiWrapper::status_t WifiWrapper::get_ap_status() {
     return _ap_st;
 }
 
+void WifiWrapper::add_sta_connection_handler(
+    std::function<void(WifiWrapper*, bool)> cb
+) {
+    sta_conn_handlers.push_back(cb);
+}
+
+void WifiWrapper::add_sta_disconnect_handler(
+    std::function<void(WifiWrapper*)> cb
+) {
+    sta_disconnect_handlers.push_back(cb);
+}
+
 extern "C" void WifiWrapper::wifi_event_handler(
     void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data
@@ -218,6 +230,12 @@ extern "C" void WifiWrapper::wifi_event_handler(
             w->sta_event_group, STA_CONNECTED_BIT
         );
 
+        if(bits & STA_CONNECTED_BIT) {
+            w->sta_disconnect();
+            w->notify_sta_disconnect();
+            return;
+        }
+
         if(
             (w->sta_reconnect_count >= w->sta_max_reconnect_count) && 
             (w->sta_max_reconnect_count != -1)
@@ -225,6 +243,7 @@ extern "C" void WifiWrapper::wifi_event_handler(
             xEventGroupSetBits(
                 w->sta_event_group, STA_CONN_LIMIT_REACHED_BIT
             );
+            w->notify_sta_connect(false);
             return;
         }
 
@@ -249,9 +268,24 @@ extern "C" void WifiWrapper::ip_event_handler(
             STA_CONNECTED_BIT
         );
 
+        w->notify_sta_connect(true);
         w->sta_reconnect_count = 0;
     }
 }
+
+void WifiWrapper::notify_sta_connect(bool is_connected) {
+    for(auto cb: sta_conn_handlers) {
+        cb(this, is_connected);
+    }
+}
+
+
+void WifiWrapper::notify_sta_disconnect() {
+    for(auto cb: sta_disconnect_handlers) {
+        cb(this);
+    }
+}
+
 
 WifiWrapper* WifiWrapper::_instance = nullptr;
 
