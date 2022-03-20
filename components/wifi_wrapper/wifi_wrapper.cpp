@@ -15,26 +15,66 @@ esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
         return ESP_FAIL;
     }
 
-    if(CONNECTED == get_sta_status()) {
+    if(ENABLED == get_sta_status()) {
         ESP_LOGE(TAG, "Can not connect STA: already connected");
         return ESP_FAIL;
     }
 
-    //TODO
+    netif = esp_netif_create_default_wifi_sta();
+    if(netif == nullptr) {
+        ESP_LOGE(TAG, "Can not connect STA, netif not initiated");
+        return ESP_FAIL;
+    }
+
+    wifi_config_t wifi_config;
+    memcpy(wifi_config.sta.ssid, ssid, strlen(ssid)+1);
+    memcpy(wifi_config.sta.password, pass, strlen(pass)+1);
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_config.sta.pmf_cfg.required = false;
+
+    esp_err_t st;
+    st = esp_wifi_set_mode(WIFI_MODE_STA);
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Can not set wifi mode");
+        esp_wifi_set_mode(WIFI_MODE_NULL);
+        esp_netif_destroy(netif);
+        return st;
+    }
+
+    st = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Can not configure wifi");
+        esp_wifi_set_mode(WIFI_MODE_NULL);
+        esp_netif_destroy(netif);
+        return st;
+    }
+
+    st = esp_wifi_start();
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Can not start AP");
+        esp_wifi_set_mode(WIFI_MODE_NULL);
+        esp_netif_destroy(netif);
+        return st;
+    }
+
+    _sta_st = ENABLED;
     return ESP_OK;
 }
 
 esp_err_t WifiWrapper::sta_disconnect() {
-    if(DISCONNECTED == get_sta_status()) {
+    if(ENABLED == get_sta_status()) {
         ESP_LOGE(TAG, "Can not disconnect, sta is not connected");
         return ESP_FAIL;
     }
 
-    //TODO
+    _sta_st = DISABLED;
+    esp_wifi_set_mode(WIFI_MODE_NULL);
+    esp_netif_destroy(netif);
+
     return ESP_OK;
 }
 
-WifiWrapper::sta_status WifiWrapper::get_sta_status() {
+WifiWrapper::status_t WifiWrapper::get_sta_status() {
     return _sta_st;
 }
 
@@ -44,7 +84,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
         return ESP_FAIL;
     }
 
-    if(CONNECTED == get_sta_status()) {
+    if(ENABLED == get_sta_status()) {
         ESP_LOGE(TAG, "Can not start AP: STA running");
         return ESP_FAIL;
     }
@@ -108,7 +148,7 @@ esp_err_t WifiWrapper::ap_stop() {
     return ESP_OK;
 }
 
-WifiWrapper::ap_status WifiWrapper::get_ap_status() {
+WifiWrapper::status_t WifiWrapper::get_ap_status() {
     return _ap_st;
 }
 
@@ -136,6 +176,11 @@ esp_err_t WifiWrapper::wifi_init() {
     st = esp_event_handler_instance_register(
         WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL
     );
+
+    st = esp_event_handler_instance_register(
+        IP_EVENT, ESP_EVENT_ANY_ID, &ip_event_handler, NULL, NULL
+    );
+
     if(ESP_OK != st) {
         ESP_LOGE(TAG, "Error while event handler registration: %s", esp_err_to_name(st));
         return st;
@@ -156,5 +201,23 @@ extern "C" void WifiWrapper::wifi_event_handler(
         wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
         ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
                  MAC2STR(event->mac), event->aid);
+    } else if (event_id == WIFI_EVENT_STA_START) {
+        ESP_LOGI(TAG, "STA started. Connecting to AP...");
+        esp_wifi_connect();
+    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGI(TAG, "Disconnect event. Connecting to AP...");
+        esp_wifi_connect();
+    }
+}
+
+extern "C" void WifiWrapper::ip_event_handler(
+    void* arg, esp_event_base_t event_base,
+    int32_t event_id, void* event_data
+) {
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+       ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        //s_retry_num = 0;
+        //xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
