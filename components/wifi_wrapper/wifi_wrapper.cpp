@@ -214,6 +214,9 @@ extern "C" void WifiWrapper::wifi_event_handler(
         event_id == WIFI_EVENT_STA_DISCONNECTED
     ) {
         WifiWrapper* w = WifiWrapper::getInstanse();
+        EventBits_t bits = xEventGroupClearBits(
+            w->sta_event_group, STA_CONNECTED_BIT
+        );
 
         if(
             (w->sta_reconnect_count >= w->sta_max_reconnect_count) && 
@@ -245,6 +248,8 @@ extern "C" void WifiWrapper::ip_event_handler(
             w->sta_event_group,
             STA_CONNECTED_BIT
         );
+
+        w->sta_reconnect_count = 0;
     }
 }
 
