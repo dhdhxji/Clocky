@@ -4,6 +4,7 @@
 #include "esp_wifi.h"
 #include "esp_system.h"
 #include <cstring>
+#include <stdexcept>
 
 #define TAG "Wifi wrapper"
 
@@ -27,6 +28,7 @@ esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
     }
 
     wifi_config_t wifi_config;
+    memset(&wifi_config, 0, sizeof(wifi_config));
     memcpy(wifi_config.sta.ssid, ssid, strlen(ssid)+1);
     memcpy(wifi_config.sta.password, pass, strlen(pass)+1);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
@@ -96,6 +98,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
     }
 
     wifi_config_t wifi_config;
+    memset(&wifi_config, 0, sizeof(wifi_config));
     memcpy(wifi_config.ap.ssid, ssid, strlen(ssid));
     wifi_config.ap.ssid_len = strlen(ssid);
     memcpy(wifi_config.ap.password, pass, strlen(pass)+1);
@@ -152,43 +155,6 @@ WifiWrapper::status_t WifiWrapper::get_ap_status() {
     return _ap_st;
 }
 
-esp_err_t WifiWrapper::wifi_init() {
-    esp_err_t st;
-    st = esp_netif_init();
-    if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Error while netif init: %s", esp_err_to_name(st));
-        return st;
-    }
-
-    st = esp_event_loop_create_default();
-    if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Error while event loop init: %s", esp_err_to_name(st));
-        return st;
-    }
-    
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    st = esp_wifi_init(&cfg);
-    if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Error while WIFI init: %s", esp_err_to_name(st));
-        return st;
-    }
-
-    st = esp_event_handler_instance_register(
-        WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL
-    );
-
-    st = esp_event_handler_instance_register(
-        IP_EVENT, ESP_EVENT_ANY_ID, &ip_event_handler, NULL, NULL
-    );
-
-    if(ESP_OK != st) {
-        ESP_LOGE(TAG, "Error while event handler registration: %s", esp_err_to_name(st));
-        return st;
-    }
-
-    return ESP_OK;
-}
-
 extern "C" void WifiWrapper::wifi_event_handler(
     void* arg, esp_event_base_t event_base,
     int32_t event_id, void* event_data
@@ -220,4 +186,49 @@ extern "C" void WifiWrapper::ip_event_handler(
         //s_retry_num = 0;
         //xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
+}
+
+WifiWrapper* WifiWrapper::_instance = nullptr;
+
+WifiWrapper::WifiWrapper() {
+    esp_err_t st;
+    st = esp_netif_init();
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Error while netif init: %s", esp_err_to_name(st));
+        throw std::runtime_error(esp_err_to_name(st));
+    }
+
+    st = esp_event_loop_create_default();
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Error while event loop init: %s", esp_err_to_name(st));
+        throw std::runtime_error(esp_err_to_name(st));
+    }
+    
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    st = esp_wifi_init(&cfg);
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Error while WIFI init: %s", esp_err_to_name(st));
+        throw std::runtime_error(esp_err_to_name(st));
+    }
+
+    st = esp_event_handler_instance_register(
+        WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL
+    );
+
+    st = esp_event_handler_instance_register(
+        IP_EVENT, ESP_EVENT_ANY_ID, &ip_event_handler, NULL, NULL
+    );
+
+    if(ESP_OK != st) {
+        ESP_LOGE(TAG, "Error while event handler registration: %s", esp_err_to_name(st));
+        throw std::runtime_error(esp_err_to_name(st));
+    }
+}
+
+WifiWrapper* WifiWrapper::getInstanse() {
+    if(_instance == nullptr) {
+        _instance = new WifiWrapper();
+    }
+
+    return _instance;
 }

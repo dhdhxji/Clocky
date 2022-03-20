@@ -7,9 +7,6 @@
 
 class WifiWrapper {
 public:
-    //WifiWrapper(); // Init netif, NVS, etc
-    //~WifiWrapper();
-
     enum status_t {
         ENABLED,
         DISABLED
@@ -25,7 +22,7 @@ public:
     esp_err_t ap_stop();
     status_t get_ap_status();
 
-    static esp_err_t wifi_init();
+    static WifiWrapper* getInstanse();
 
 protected:
     static void wifi_event_handler(
@@ -37,6 +34,10 @@ protected:
             void* arg, esp_event_base_t event_base,
             int32_t event_id, void* event_data
     );
+
+private: 
+    WifiWrapper();
+    static WifiWrapper* _instance;
 
 protected:
     esp_netif_t* netif;
