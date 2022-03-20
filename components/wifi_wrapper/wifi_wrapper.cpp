@@ -31,7 +31,7 @@ WifiWrapper::sta_status WifiWrapper::get_sta_status() {
 esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
     netif = esp_netif_create_default_wifi_ap();
     if(netif == nullptr) {
-        ESP_LOGE(TAG, "Can not create wifi, sta is not connected\n");
+        ESP_LOGE(TAG, "Can not create AP, netif not initiated\n");
         return ESP_FAIL;
     }
 
