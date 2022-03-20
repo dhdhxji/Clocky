@@ -1,0 +1,1 @@
+int stubf(){return 5;}
