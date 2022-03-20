@@ -1,1 +1,0 @@
-cc -O0 -Wall -Werror -ansi -ggdb -I ../../fonts -I ../../decoder -o render_bmp render_bmp.c write_bmp.c ../../decoder/mf_encoding.c ../../decoder/mf_font.c ../../decoder/mf_justify.c ../../decoder/mf_kerning.c ../../decoder/mf_rlefont.c ../../decoder/mf_bwfont.c ../../decoder/mf_scaledfont.c ../../decoder/mf_wordwrap.c
