@@ -9,8 +9,16 @@
 #define TAG "Wifi wrapper"
 
 
+#define STA_CONNECTED_BIT               BIT(0)
+#define STA_DISCONNECTED_BIT            BIT(1)  //Currently not implemented
+#define STA_CONN_LIMIT_REACHED_BIT      BIT(2)
 
-esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
+
+esp_err_t WifiWrapper::sta_connect(
+    const char* ssid, 
+    const char* pass,
+    int max_reconnect_count
+) {
     if(ENABLED == get_ap_status()) {
         ESP_LOGE(TAG, "Can not connect STA: AP running");
         return ESP_FAIL;
@@ -20,6 +28,14 @@ esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
         ESP_LOGE(TAG, "Can not connect STA: already connected");
         return ESP_FAIL;
     }
+
+    xEventGroupClearBits(
+        sta_event_group, 
+        STA_CONNECTED_BIT | STA_DISCONNECTED_BIT | STA_CONN_LIMIT_REACHED_BIT
+    );
+
+    xEventGroupSetBits(sta_event_group, STA_DISCONNECTED_BIT);
+    sta_max_reconnect_count = max_reconnect_count;
 
     netif = esp_netif_create_default_wifi_sta();
     if(netif == nullptr) {
@@ -60,7 +76,23 @@ esp_err_t WifiWrapper::sta_connect(const char* ssid, const char* pass) {
     }
 
     _sta_st = ENABLED;
-    return ESP_OK;
+
+    EventBits_t bits =  xEventGroupWaitBits(
+        sta_event_group, 
+        STA_CONNECTED_BIT | STA_CONN_LIMIT_REACHED_BIT,
+        pdFALSE, pdFALSE,
+        portMAX_DELAY
+    );
+
+    if(bits & STA_CONNECTED_BIT) {
+        return ESP_OK;
+    } else {
+        ESP_LOGE(
+            TAG, "STA: Reconnect limit (%d) reached", max_reconnect_count
+        );
+        return ESP_FAIL;
+    }
+
 }
 
 esp_err_t WifiWrapper::sta_disconnect() {
@@ -72,6 +104,11 @@ esp_err_t WifiWrapper::sta_disconnect() {
     _sta_st = DISABLED;
     esp_wifi_set_mode(WIFI_MODE_NULL);
     esp_netif_destroy(netif);
+
+    xEventGroupClearBits(
+        sta_event_group, 
+        STA_CONNECTED_BIT | STA_DISCONNECTED_BIT | STA_CONN_LIMIT_REACHED_BIT
+    );
 
     return ESP_OK;
 }
@@ -167,11 +204,25 @@ extern "C" void WifiWrapper::wifi_event_handler(
         wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
         ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
                  MAC2STR(event->mac), event->aid);
-    } else if (event_id == WIFI_EVENT_STA_START) {
-        ESP_LOGI(TAG, "STA started. Connecting to AP...");
-        esp_wifi_connect();
-    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG, "Disconnect event. Connecting to AP...");
+    } else if (
+        event_id == WIFI_EVENT_STA_START || 
+        event_id == WIFI_EVENT_STA_DISCONNECTED
+    ) {
+        WifiWrapper* w = WifiWrapper::getInstanse();
+
+        if(
+            (w->sta_reconnect_count >= w->sta_max_reconnect_count) && 
+            (w->sta_max_reconnect_count != -1)
+        ) {
+            xEventGroupSetBits(
+                w->sta_event_group, STA_CONN_LIMIT_REACHED_BIT
+            );
+            return;
+        }
+
+        ESP_LOGI(TAG, "Connecting to AP (%d)...", w->sta_reconnect_count);
+        w->sta_reconnect_count++;
+
         esp_wifi_connect();
     }
 }
@@ -181,10 +232,14 @@ extern "C" void WifiWrapper::ip_event_handler(
     int32_t event_id, void* event_data
 ) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
-       ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-        //s_retry_num = 0;
-        //xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+
+        WifiWrapper* w = WifiWrapper::getInstanse();
+        xEventGroupSetBits(
+            w->sta_event_group,
+            STA_CONNECTED_BIT
+        );
     }
 }
 
@@ -223,6 +278,8 @@ WifiWrapper::WifiWrapper() {
         ESP_LOGE(TAG, "Error while event handler registration: %s", esp_err_to_name(st));
         throw std::runtime_error(esp_err_to_name(st));
     }
+
+    sta_event_group = xEventGroupCreate();
 }
 
 WifiWrapper* WifiWrapper::getInstanse() {

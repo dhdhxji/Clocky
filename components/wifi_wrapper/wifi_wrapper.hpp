@@ -4,6 +4,7 @@
 #include "esp_err.h"
 #include "esp_netif.h"
 #include "esp_event.h"
+#include "freertos/event_groups.h"
 
 class WifiWrapper {
 public:
@@ -12,7 +13,8 @@ public:
         DISABLED
     };
 
-    esp_err_t sta_connect(const char* ssid, const char* pass);
+    esp_err_t sta_connect(const char* ssid, const char* pass, 
+                          int max_reconnect_count = -1);
     esp_err_t sta_disconnect();
     status_t get_sta_status();
     bool isSTAConnected() {/*TODO*/return false;};
@@ -44,6 +46,10 @@ protected:
     
     status_t _sta_st = DISABLED;
     status_t  _ap_st = DISABLED;
+
+    int sta_max_reconnect_count = 0;
+    int sta_reconnect_count = 0;
+    EventGroupHandle_t sta_event_group;
 };
 
 #endif // WIFI_WRAPPER_H
