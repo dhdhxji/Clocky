@@ -17,7 +17,7 @@ public:
                           int max_reconnect_count = -1);
     esp_err_t sta_disconnect();
     status_t get_sta_status();
-    bool isSTAConnected() {/*TODO*/return false;};
+    bool is_sta_connected();
 
     
     esp_err_t ap_start(const char* ssid, const char* pass);

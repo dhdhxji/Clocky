@@ -117,6 +117,11 @@ WifiWrapper::status_t WifiWrapper::get_sta_status() {
     return _sta_st;
 }
 
+bool WifiWrapper::is_sta_connected() {
+    return xEventGroupGetBits(sta_event_group) & STA_CONNECTED_BIT;
+}
+
+
 esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
     if(ENABLED == get_ap_status()) {
         ESP_LOGE(TAG, "Can not start AP: already running");
