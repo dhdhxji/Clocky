@@ -6,6 +6,18 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "mount_fs.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "nvs_flash.h"
+#include "wifi_wrapper.hpp"
+#include "web_server.hpp"
+
+extern "C" {
+#include "file_server.h"
+}
+
+#define WIFI_SSID   ""
+#define WIFI_PASS   ""
 
 
 #define REFRESH_RATE_HZ 30
@@ -99,11 +111,25 @@ void print_system_info() {
 
 extern "C" void app_main() {
     print_system_info();
-    
     ESP_ERROR_CHECK(init_fs());
+    ESP_ERROR_CHECK(nvs_flash_init());
+    
+    WifiWrapper* w = WifiWrapper::getInstanse();
+    w->sta_connect(WIFI_SSID, WIFI_PASS, 5/* , true */);
+
+    file_server_t file_srv;
+    ESP_ERROR_CHECK(build_file_server("/", &file_srv));
+    WebServer srv(80);
+    srv.addUriHandler("/index.html", HTTP_GET, file_srv.index_get_handler, file_srv.ctx);
+    srv.addUriHandler("/favicon.ico", HTTP_GET, file_srv.favicon_get_handler, file_srv.ctx);
+    srv.addUriHandler("/upload/*", HTTP_POST, file_srv.file_put_post_handler, file_srv.ctx);
+    srv.addUriHandler("/delete/*", HTTP_POST, file_srv.delete_post_handler, file_srv.ctx);
+    srv.addUriHandler("/*", HTTP_GET, file_srv.file_get_get_handler, file_srv.ctx);
+
+
+    vTaskDelay(portMAX_DELAY);
 
     CanvasConsole canvas(MATRIX_W, MATRIX_H);
-    
     try {
         LuaRuntime rt(&canvas, 30);
 
