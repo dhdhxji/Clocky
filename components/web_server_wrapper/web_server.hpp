@@ -20,7 +20,7 @@ public:
     );
 
 protected:
-    httpd_handle_t httpd;
+    httpd_handle_t httpd = nullptr;
     std::vector<void*> userContexts;
 };
 

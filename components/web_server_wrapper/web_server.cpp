@@ -31,7 +31,7 @@ WebServer::WebServer(uint16_t port) {
 }
 
 WebServer::~WebServer() {
-    httpd_stop(&httpd);
+    httpd_stop(httpd);
 
     for(auto ctx: userContexts) {
         delete (user_context_t*)ctx;
@@ -58,5 +58,5 @@ void WebServer::addUriHandler(
         .user_ctx  = user_ctx
     };
 
-    httpd_register_uri_handler(&httpd, &uri_cfg);
+    httpd_register_uri_handler(httpd, &uri_cfg);
 }
