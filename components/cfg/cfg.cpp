@@ -6,11 +6,14 @@
 #include "sol/sol.hpp"
 #include <fstream>
 #include <vector>
+#include <cstdio>
 
 extern const uint8_t serpent_script_start[] asm("_binary_serpent_lua_start");
 extern const uint8_t serpent_script_end[]   asm("_binary_serpent_lua_end");
 
 static const std::string CFG_TABLE_NAME = "config";
+
+typedef sol::table_proxy<sol::basic_table_core<true, sol::reference> &, std::tuple<std::string>> table_ref_t;
 
 
 static void split_dot_separated_path(const std::string& path, std::vector<std::string> out) {
@@ -26,28 +29,38 @@ static void split_dot_separated_path(const std::string& path, std::vector<std::s
     }
 }
 
-static sol::table_proxy<sol::basic_table_core<true, sol::reference> &, std::tuple<std::__cxx11::string>> get_item_ref(const std::string& path, sol::state& state) {
+static table_ref_t get_item_ref(const std::string& path, sol::state& state) {
+    std::string fullpath = CFG_TABLE_NAME + "." + path;
     std::vector<std::string> vpath;
-    split_dot_separated_path(path, vpath);
+    split_dot_separated_path(fullpath, vpath);
 
-    auto table = state[CFG_TABLE_NAME];
-    for(int i = 0; i < vpath.size()-1; ++i) {
+    table_ref_t table = state[CFG_TABLE_NAME];
+    if(!table.valid()) {
+        state[CFG_TABLE_NAME] = sol::new_table();
+        table = state[CFG_TABLE_NAME];
+    }
+
+    for(int i = 0; i < vpath.size(); ++i) {
         const std::string& subpath = vpath[i];
 
-        auto new_table = table[subpath];
-        if(!new_table.valid()) {
+        if(!table[subpath].valid()) {
             table[subpath] = sol::new_table();
             table = table[subpath];
         }
     }
 
-    return table[ vpath[vpath.size()-1] ];
+    return table;
 }
 
 Cfg::Cfg(const std::string& cfgPath) {
     state = new sol::state;
+    state->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
+    state->require_script("serpent", (const char*)serpent_script_start);
 
-    state->script(std::string((const char*)serpent_script_start));
+    // Create config file if it is does not exists
+    FILE* f = fopen(cfgPath.c_str(), "ab+");
+    if(f) {fclose(f);}
+
     state->script_file(cfgPath);
 }
 
