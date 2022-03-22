@@ -16,23 +16,18 @@ static const std::string CFG_TABLE_NAME = "config";
 typedef sol::table_proxy<sol::basic_table_core<true, sol::reference> &, std::tuple<std::string>> table_ref_t;
 
 
-static void split_dot_separated_path(const std::string& path, std::vector<std::string> out) {
-    const std::string delim = ".";
-    
-    auto start = 0U;
-    auto end = path.find(delim);
-    while (end != std::string::npos)
-    {
-        out.push_back( path.substr(start, end - start) );
-        start = end + delim.length();
-        end = path.find(delim, start);
+static void split_dot_separated_path(const std::string& path, std::vector<std::string>& out) {
+    std::stringstream ss(path);
+    std::string segment;
+
+    while(std::getline(ss, segment, '.')) {
+        out.push_back(segment);
     }
 }
 
 static table_ref_t get_item_ref(const std::string& path, sol::state& state) {
-    std::string fullpath = CFG_TABLE_NAME + "." + path;
     std::vector<std::string> vpath;
-    split_dot_separated_path(fullpath, vpath);
+    split_dot_separated_path(path, vpath);
 
     table_ref_t table = state[CFG_TABLE_NAME];
     if(!table.valid()) {
