@@ -48,8 +48,9 @@ static table_ref_t get_item_ref(const std::string& path, sol::state& state) {
 }
 
 Cfg::Cfg(const std::string& cfgPath) {
+    loadPath = cfgPath;
     state = new sol::state;
-    state->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
+    state->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
     state->require_script("serpent", (const char*)serpent_script_start);
 
     // Create config file if it is does not exists
