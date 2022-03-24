@@ -124,6 +124,10 @@ template<class T>
 T Cfg::get(const std::string& path) {
     std::string name;
     auto table = get_parent_table_ref(path, *state, name);
+    if(!table[name].valid()) {
+        throw std::runtime_error("Value " + path + " does not exists");
+    }
+
     return table[name];
 }
 
