@@ -35,7 +35,8 @@ static sol::object get_table_ref_recursively(
         return object;
     }
 
-    if(!object.as<sol::table>()[*it].valid()) {
+    sol::object next = object.as<sol::table>()[*it];
+    if(!next.valid() || !next.is<sol::table>()) {
         if(isCreateSubTables) {
             object.as<sol::table>()[*it] = sol::new_table();
         }
