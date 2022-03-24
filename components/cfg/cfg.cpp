@@ -25,26 +25,52 @@ static void split_dot_separated_path(const std::string& path, std::vector<std::s
     }
 }
 
-static table_ref_t get_item_ref(const std::string& path, sol::state& state) {
-    std::vector<std::string> vpath;
-    split_dot_separated_path(path, vpath);
-
-    table_ref_t table = state[CFG_TABLE_NAME];
-    if(!table.valid()) {
-        state[CFG_TABLE_NAME] = sol::new_table();
-        table = state[CFG_TABLE_NAME];
+static sol::object get_table_ref_recursively(
+    sol::object object, 
+    std::vector<std::string>::iterator it,
+    std::vector<std::string>::iterator end,
+    bool isCreateSubTables
+) {
+    if(it == end) {
+        return object;
     }
 
-    for(int i = 0; i < vpath.size(); ++i) {
-        const std::string& subpath = vpath[i];
-
-        if(!table[subpath].valid()) {
-            table[subpath] = sol::new_table();
-            table = table[subpath];
+    if(!object.as<sol::table>()[*it].valid()) {
+        if(isCreateSubTables) {
+            object.as<sol::table>()[*it] = sol::new_table();
+        }
+        else {
+            throw std::runtime_error("Can not create subtable: read only table");
         }
     }
 
-    return table;
+    return get_table_ref_recursively(object.as<sol::table>()[*it], it+1, end, isCreateSubTables);
+}
+
+static sol::table get_parent_table_ref(
+    const std::string& path, 
+    sol::state& state, 
+    std::string& item_name, 
+    bool createSubTables=false
+) {
+    if(path == "") {
+        throw std::runtime_error("Path can not be empty");
+    }
+    
+    std::vector<std::string> vpath;
+    split_dot_separated_path(path, vpath);
+    item_name = *(vpath.end()-1);
+
+    if(!state[CFG_TABLE_NAME].valid()) {
+        state[CFG_TABLE_NAME] = sol::new_table();
+    }
+
+    return get_table_ref_recursively(
+        state[CFG_TABLE_NAME], 
+        vpath.begin(),
+        vpath.end()-1,
+        createSubTables
+    );
 }
 
 Cfg::Cfg(const std::string& cfgPath) {
@@ -88,14 +114,16 @@ void Cfg::save(const std::string& path) {
 
 template<class T>
 void Cfg::put(const std::string& path, const T& item) {
-    auto table = get_item_ref(path, *state);
-    table = item;
+    std::string name;
+    auto item_ref = get_parent_table_ref(path, *state, name, true);
+    item_ref[name] = item;
 }
 
 template<class T>
 T Cfg::get(const std::string& path) {
-    auto table = get_item_ref(path, *state);
-    return table;
+    std::string name;
+    auto table = get_parent_table_ref(path, *state, name);
+    return table[name];
 }
 
 
