@@ -4,10 +4,7 @@
 #include "colproc/runtime/lua_runtime.h"
 #include "colproc/variable/variable_callback.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
 #include "mount_fs.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "nvs_flash.h"
 #include "wifi_wrapper.hpp"
 #include "web_server.hpp"
@@ -55,8 +52,6 @@ extern "C" void app_main() {
     srv.addUriHandler("/delete/*", HTTP_POST, file_srv.delete_post_handler, file_srv.ctx);
     srv.addUriHandler("/*", HTTP_GET, file_srv.file_get_get_handler, file_srv.ctx);
 
-
-    vTaskDelay(portMAX_DELAY);
 
     CanvasConsole canvas(MATRIX_W_DEFAULT, MATRIX_H_DEFAULT);
     try {
