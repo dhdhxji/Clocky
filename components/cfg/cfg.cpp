@@ -11,9 +11,7 @@
 extern const uint8_t serpent_script_start[] asm("_binary_serpent_lua_start");
 extern const uint8_t serpent_script_end[]   asm("_binary_serpent_lua_end");
 
-static const std::string CFG_TABLE_NAME = "config";
-
-typedef sol::table_proxy<sol::basic_table_core<true, sol::reference> &, std::tuple<std::string>> table_ref_t;
+static const std::string CFG_TABLE_NAME = "Config";
 
 
 static void split_dot_separated_path(const std::string& path, std::vector<std::string>& out) {
