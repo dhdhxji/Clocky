@@ -129,12 +129,27 @@ T Cfg::get(const std::string& path) {
     return table[name];
 }
 
+template<class T>
+T Cfg::get(const std::string& path, const T& defaultValue) {
+    try {
+        return get<T>(path);
+    } catch(std::runtime_error&) {
+        return defaultValue;
+    }
+}
+
 
 template int32_t Cfg::get<int32_t>(const std::string&);
 template float Cfg::get<float>(const std::string&);
 template double Cfg::get<double>(const std::string&);
 template bool Cfg::get<bool>(const std::string&);
 template std::string Cfg::get<std::string>(const std::string&);
+
+template int32_t Cfg::get<int32_t>(const std::string&, const int32_t&);
+template float Cfg::get<float>(const std::string&, const float&);
+template double Cfg::get<double>(const std::string&, const double&);
+template bool Cfg::get<bool>(const std::string&, const bool&);
+template std::string Cfg::get<std::string>(const std::string&, const std::string&);
 
 template void Cfg::put<int32_t>(const std::string&, const int32_t&);
 template void Cfg::put<float>(const std::string&, const float&);

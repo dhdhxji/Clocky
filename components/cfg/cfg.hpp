@@ -35,6 +35,9 @@ public:
     template<class T>
     T get(const std::string& path);
 
+    template<class T>
+    T get(const std::string& path, const T& defaultValue);
+
 protected:
     std::string loadPath;
     sol::state* state;
