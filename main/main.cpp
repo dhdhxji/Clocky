@@ -6,16 +6,16 @@
 #include "esp_system.h"
 #include "mount_fs.h"
 #include "nvs_flash.h"
-#include "wifi_wrapper.hpp"
 #include "web_server.hpp"
 #include "canvas_impl.h"
+#include "cfg.hpp"
+#include "wifi_handling.hpp"
 
 extern "C" {
 #include "file_server.h"
 }
 
-#define WIFI_SSID ""
-#define WIFI_PASS ""
+
 
 void print_system_info() {
     esp_chip_info_t chip_info;
@@ -40,8 +40,9 @@ extern "C" void app_main() {
     ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(nvs_flash_init());
     
-    WifiWrapper* w = WifiWrapper::getInstanse();
-    w->sta_connect(WIFI_SSID, WIFI_PASS, 5/* , true */);
+    Cfg cfg("config.lua");
+
+    init_wifi_handler(cfg);
 
     file_server_t file_srv;
     ESP_ERROR_CHECK(build_file_server("/", &file_srv));
