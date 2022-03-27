@@ -6,7 +6,10 @@
 #include "esp_event.h"
 #include "freertos/event_groups.h"
 #include <vector>
+#include <string>
 #include <functional>
+
+using std::string;
 
 class WifiWrapper {
 public:
@@ -15,7 +18,7 @@ public:
         DISABLED
     };
 
-    esp_err_t sta_connect(const char* ssid, const char* pass, 
+    esp_err_t sta_connect(const string& ssid, const string& pass, 
                           int max_reconnect_count = -1,
                           bool is_async = false);
     esp_err_t sta_disconnect();
@@ -23,7 +26,7 @@ public:
     bool is_sta_connected();
 
     
-    esp_err_t ap_start(const char* ssid, const char* pass);
+    esp_err_t ap_start(const string& ssid, const string& pass);
     esp_err_t ap_stop();
     status_t get_ap_status();
 

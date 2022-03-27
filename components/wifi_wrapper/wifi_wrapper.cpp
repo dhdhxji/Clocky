@@ -15,8 +15,8 @@
 
 
 esp_err_t WifiWrapper::sta_connect(
-    const char* ssid, 
-    const char* pass,
+    const string& ssid, 
+    const string& pass,
     int max_reconnect_count, 
     bool is_async
 ) {
@@ -46,8 +46,8 @@ esp_err_t WifiWrapper::sta_connect(
 
     wifi_config_t wifi_config;
     memset(&wifi_config, 0, sizeof(wifi_config));
-    memcpy(wifi_config.sta.ssid, ssid, strlen(ssid)+1);
-    memcpy(wifi_config.sta.password, pass, strlen(pass)+1);
+    memcpy(wifi_config.sta.ssid, ssid.c_str(), ssid.length()+1);
+    memcpy(wifi_config.sta.password, pass.c_str(), pass.length()+1);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     wifi_config.sta.pmf_cfg.required = false;
 
@@ -124,7 +124,7 @@ bool WifiWrapper::is_sta_connected() {
 }
 
 
-esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
+esp_err_t WifiWrapper::ap_start(const string& ssid, const string& pass) {
     if(ENABLED == get_ap_status()) {
         ESP_LOGE(TAG, "Can not start AP: already running");
         return ESP_FAIL;
@@ -143,11 +143,11 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
 
     wifi_config_t wifi_config;
     memset(&wifi_config, 0, sizeof(wifi_config));
-    memcpy(wifi_config.ap.ssid, ssid, strlen(ssid));
-    wifi_config.ap.ssid_len = strlen(ssid);
-    memcpy(wifi_config.ap.password, pass, strlen(pass)+1);
+    memcpy(wifi_config.ap.ssid, ssid.c_str(), ssid.length()+1);
+    wifi_config.ap.ssid_len = ssid.length();
+    memcpy(wifi_config.ap.password, pass.c_str(), pass.length()+1);
     wifi_config.ap.max_connection = 10;
-    wifi_config.ap.authmode = (strlen(pass) == 0) ? WIFI_AUTH_OPEN:WIFI_AUTH_WPA_WPA2_PSK;
+    wifi_config.ap.authmode = (pass.length() == 0) ? WIFI_AUTH_OPEN:WIFI_AUTH_WPA_WPA2_PSK;
     wifi_config.ap.ssid_hidden = false;
 
     esp_err_t st;
@@ -176,7 +176,7 @@ esp_err_t WifiWrapper::ap_start(const char* ssid, const char* pass) {
     }
 
     ESP_LOGI(TAG, "SoftAP started. SSID:%s password:%s channel:%d",
-             ssid, pass, wifi_config.ap.channel);
+             ssid.c_str(), pass.c_str(), wifi_config.ap.channel);
 
     _ap_st = ENABLED;
     return ESP_OK;
