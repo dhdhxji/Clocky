@@ -38,6 +38,7 @@ void init_wifi_handler(Cfg& cfg) {
             });
         } catch(...) {
             cfg.put("wifi.isAP", true);
+            cfg.save();
             esp_restart();
         }
     }
