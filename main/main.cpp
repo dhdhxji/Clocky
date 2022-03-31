@@ -40,7 +40,7 @@ extern "C" void app_main() {
     ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(nvs_flash_init());
     
-    Cfg cfg("config.lua");
+    Cfg cfg("config.json");
 
     init_wifi_handler(cfg);
 

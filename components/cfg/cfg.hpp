@@ -2,12 +2,13 @@
 #define CFG_HPP
 
 #include <string>
+#include "nlohmann/json.hpp"
 
-namespace sol { class state;}
+using nlohmann::json;
 
 /**
  * @brief This library designed to store and receive configuration values
- * inside lua tables in file. This library handles next value types:
+ * in json files. This library handles next value types:
  * - int32_t
  * - double, float
  * - std::string
@@ -15,16 +16,10 @@ namespace sol { class state;}
  * 
  */
 
-template<class T>
-class CfgValue {
-public:
-
-};
 
 class Cfg {
 public:
     Cfg(const std::string& cfgPath);
-    ~Cfg();
 
     void save();
     void save(const std::string& path);
@@ -40,7 +35,7 @@ public:
 
 protected:
     std::string loadPath;
-    sol::state* state;
+    json        state;
 };
 
 #endif // CFG_HPP
