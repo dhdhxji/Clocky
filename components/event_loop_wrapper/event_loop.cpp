@@ -38,17 +38,17 @@ EventLoop::~EventLoop() {
 }
 
 
-EventLoop::handle_t EventLoop::handerRegister(
+EventLoop::handle_t EventLoop::handlerRegister(
     event_base_t base, 
     int32_t eventId,
     std::function<void(EventLoop&, event_base_t, int32_t, void*)> handler
 ) {
-    evt_context.push_back((event_ctx_t){
-        .eloop = this,
-        .cb = handler
-    });
 
-    event_ctx_t* ctx = &(evt_context.back());
+    event_ctx_t* ctx = new event_ctx_t;
+    ctx->cb = handler;
+    ctx->eloop = this;
+
+    evt_context.push_back(std::unique_ptr<event_ctx_t>(ctx));
 
     handle_t instance;
     instance.base = base;

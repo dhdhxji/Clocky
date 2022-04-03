@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <vector>
+#include <memory>
 #include "esp_event.h"
 
 #define DEFINE_BASE_ID(id) ESP_EVENT_DEFINE_BASE(id)
@@ -27,7 +28,7 @@ public:
     EventLoop();
     ~EventLoop();
 
-    handle_t handerRegister(
+    handle_t handlerRegister(
         event_base_t base, 
         int32_t eventId,
         std::function<void(EventLoop&, event_base_t, int32_t, void*)> handler
@@ -39,7 +40,7 @@ public:
 
 protected:
     esp_event_loop_handle_t handle; 
-    std::vector<event_ctx_t> evt_context;
+    std::vector<std::unique_ptr<event_ctx_t>> evt_context;
 };
 
 #endif // EVENT_LOOP_HPP
