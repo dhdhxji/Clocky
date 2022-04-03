@@ -18,9 +18,9 @@ static void event_loop_handler(
 
 EventLoop::EventLoop() {
     esp_event_loop_args_t cfg;
-    cfg.queue_size = 4096;
+    cfg.queue_size = 128;
     cfg.task_name = "Event loop";
-    cfg.task_stack_size = 4096;
+    cfg.task_stack_size = 2048;
     cfg.task_priority = 10;
     cfg.task_core_id = 0;
     

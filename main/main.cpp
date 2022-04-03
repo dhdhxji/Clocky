@@ -10,6 +10,7 @@
 #include "canvas_impl.h"
 #include "cfg.hpp"
 #include "wifi_handling.hpp"
+#include "event_loop.hpp"
 
 extern "C" {
 #include "file_server.h"
@@ -41,8 +42,10 @@ extern "C" void app_main() {
     ESP_ERROR_CHECK(nvs_flash_init());
     
     Cfg cfg("config.json");
+    EventLoop appEventLoop;
 
-    init_wifi_handler(cfg);
+    init_wifi_handler(cfg, appEventLoop);
+    appEventLoop.post(APP_WIFI_EVT, WIFI_START_EVT, nullptr, 0);
 
     file_server_t file_srv;
     ESP_ERROR_CHECK(build_file_server("/", &file_srv));
