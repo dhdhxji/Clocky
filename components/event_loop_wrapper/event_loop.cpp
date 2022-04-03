@@ -41,7 +41,7 @@ EventLoop::~EventLoop() {
 EventLoop::handle_t EventLoop::handlerRegister(
     event_base_t base, 
     int32_t eventId,
-    std::function<void(EventLoop&, event_base_t, int32_t, void*)> handler
+    event_handler_t handler
 ) {
 
     event_ctx_t* ctx = new event_ctx_t;

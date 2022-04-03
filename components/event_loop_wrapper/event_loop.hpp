@@ -13,6 +13,8 @@ typedef esp_event_base_t event_base_t;
 
 class EventLoop {
 public:
+    typedef std::function<void(EventLoop&, event_base_t, int32_t, void*)> event_handler_t;
+
     struct handle_t
     {
         event_base_t base;
@@ -22,7 +24,7 @@ public:
   
     struct event_ctx_t {
         EventLoop* eloop;
-        std::function<void(EventLoop&, event_base_t, int32_t, void*)> cb;
+        event_handler_t cb;
     };
     
     EventLoop();
@@ -31,7 +33,7 @@ public:
     handle_t handlerRegister(
         event_base_t base, 
         int32_t eventId,
-        std::function<void(EventLoop&, event_base_t, int32_t, void*)> handler
+        event_handler_t handler
     );
 
     void handlerUnregister(handle_t handle);
