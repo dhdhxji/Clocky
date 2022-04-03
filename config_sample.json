@@ -1,0 +1,16 @@
+{
+  "config": {
+    "wifi": {
+      "isAP": false,
+      "sta": {
+        "ssid": "",
+        "pass": "",
+        "reconnect_count": 11
+      },
+      "ap": {
+        "ssid": "",
+        "pass": ""
+      }
+    }
+  }
+}
