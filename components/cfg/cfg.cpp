@@ -9,7 +9,7 @@
 using namespace nlohmann;
 using namespace std;
 
-static const std::string CFG_TABLE_NAME = "Config";
+static const std::string CFG_TABLE_NAME = "config";
 
 
 static void split_dot_separated_path(const std::string& path, std::vector<std::string>& out) {
@@ -86,7 +86,7 @@ T Cfg::get(const std::string& path) {
         state[CFG_TABLE_NAME], vpath.begin(), vpath.end()
     );
     
-    if( item.is_null() ) {
+    if( item.is_null() || item[*(vpath.end()-1)].is_null() ) {
         throw std::runtime_error("Value " + path + " does not exists");
     }
 
