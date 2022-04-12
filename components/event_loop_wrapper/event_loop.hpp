@@ -4,10 +4,15 @@
 #include <functional>
 #include <vector>
 #include <memory>
+#include <cstring>
 #include "esp_event.h"
 
 #define DEFINE_BASE_ID(id) ESP_EVENT_DEFINE_BASE(id)
 #define DECLARE_BASE_ID(id) ESP_EVENT_DECLARE_BASE(id)
+
+#define ARG_STR(str)    ((void*)(str)), (strlen(str))
+#define ARG_SIMPLE(val) ((void*)(&val)), (sizeof(val))
+#define ARG_NONE        (nullptr), (0)
 
 typedef esp_event_base_t event_base_t;
 
