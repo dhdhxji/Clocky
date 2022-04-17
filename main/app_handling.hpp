@@ -26,8 +26,8 @@ DEFINE_BASE_ID(APP);
 
 #define STR_VWLEN(str) (void*)(str), (strlen((str))+1)
 
-std::unique_ptr<Canvas> canvas;
-std::unique_ptr<Runtime> rt;
+std::unique_ptr<Canvas> canvas = nullptr;
+std::unique_ptr<Runtime> rt = nullptr;
 
 Runtime* build_upload_screen_rt(Canvas* cv, uint32_t frameRare) {
     Runtime* rt = new Runtime();
@@ -49,8 +49,15 @@ Runtime* build_upload_screen_rt(Canvas* cv, uint32_t frameRare) {
 extern "C" void render_loop_task_fn(void* parameters) {
     EventLoop* ev = (EventLoop*)parameters;
 
-    rt->runRenderLoop();
+    if(rt.get() != nullptr) {
+        rt->runRenderLoop();
+    } 
+    else {
+        ev->post(APP, APP_ERROR_EVT, STR_VWLEN("Can not start render loop: runtime was not initialised"));
+    }
     ev->post(APP, APP_LOOP_STOPPED_EVT, nullptr, 0);
+
+    vTaskDelete(nullptr);
 }
 
 void init_app_handler(EventLoop& ev, Cfg& cfg) {
